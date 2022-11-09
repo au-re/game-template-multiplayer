@@ -3,9 +3,11 @@ Thumbs.db
 .DS_Store
 .vscode
 
-
 # Vendors
 node_modules/
 
 # Build
 dist
+
+# Secrets
+.env
