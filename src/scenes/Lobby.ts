@@ -1,23 +1,36 @@
 import Phaser from "phaser";
+import { PlayerActor } from "../actors/PlayerActor";
+import { updatePlayerState, updateTimerState } from "../actions";
+import { getRandomInt } from "../utils";
 
 // hack to keep font readable
 const scaleUp = 4;
 
-interface PlayerState {
-  [key: string]: {
-    player_sprite: Phaser.Physics.Arcade.Sprite;
-    player_name: Phaser.GameObjects.BitmapText;
+interface Player {
+  playerSprite: Phaser.Physics.Arcade.Sprite;
+  playerName: Phaser.GameObjects.BitmapText;
+  isInverted: boolean;
+  targetPos: {
+    x: number;
+    y: number;
   };
+}
+
+interface PlayerState {
+  [key: string]: Player;
 }
 
 export default class Lobby extends Phaser.Scene {
   private cursors!: Phaser.Types.Input.Keyboard.CursorKeys;
   private player_speed = 100 * scaleUp;
   private update_timer = 0;
+  private countdown_timer = 0;
+  private countdown_timer_dt = 0;
   private players: PlayerState = {};
   private walls!: any;
   private gameId = "";
   private playerId = "";
+  private crates!: any;
 
   constructor() {
     super("Lobby");
@@ -26,18 +39,13 @@ export default class Lobby extends Phaser.Scene {
   preload() {
     // one way to listen to cursor events
     this.cursors = this.input.keyboard.createCursorKeys();
-
     this.load.spritesheet("sprites", "assets/tilemaps/tilemap_packed.png", {
       frameWidth: 16,
       frameHeight: 16,
     });
     this.load.image("tiles", "assets/tilemaps/tilemap_packed.png");
     this.load.tilemapTiledJSON("background", "assets/tilemaps/background.json");
-    this.load.bitmapFont(
-      "pixeled",
-      "assets/fonts/Pixeled.png",
-      "assets/fonts/Pixeled.xml"
-    );
+    this.load.bitmapFont("pixeled", "assets/fonts/Pixeled.png", "assets/fonts/Pixeled.xml");
   }
 
   create() {
@@ -53,52 +61,53 @@ export default class Lobby extends Phaser.Scene {
     this.walls.setScale(scaleUp);
     background.setScale(scaleUp);
 
-    // debug collision layer
-    // const debugGraphics = this.add.graphics().setAlpha(0.7)
-    // walls.renderDebug(debugGraphics, {
-    //   tileColor: null,
-    //   collidingTileColor: new Phaser.Display.Color(243,234,48,255),
-    //   faceColor: new Phaser.Display.Color(40,30,37,255),
-    // })
-
     // listen to events
     this.events.on("game_data", this.onGameDataChange, this);
   }
 
-  spawnPlayer(playerId: string) {
-    this.players[playerId] = { player_sprite: null, player_name: null };
-    // placing a sprite
-    this.players[playerId].player_sprite = this.physics.add.sprite(
-      140,
-      140,
-      "sprites",
-      85
-    );
-    this.players[playerId].player_sprite.setScale(scaleUp);
-    // physics collision
-    this.physics.add.collider(this.players[playerId].player_sprite, this.walls);
+  update(t: number, dt: number) {
+    const currentPlayer = this.players[this.playerId];
+    if (!this.cursors || !currentPlayer || !this.gameId) return;
 
-    // displaying the player name
-    this.players[playerId].player_name = this.add.bitmapText(
-      140,
-      140,
-      "pixeled",
-      "",
-      8
-    );
-    this.players[playerId].player_name.setText(playerId);
-  }
+    // update the player state every 200ms
+    this.update_timer += dt;
+    if (this.update_timer > 200) {
+      this.update_timer = 0;
+      updatePlayerState(this.gameId, {
+        xPos: currentPlayer.playerSprite.x,
+        yPos: currentPlayer.playerSprite.y,
+        isInverted: currentPlayer.isInverted,
+      });
+    }
 
-  destroyPlayer(playerId: string) {
-    this.players[playerId].player_sprite.destroy();
-    this.players[playerId].player_name.destroy();
-    delete this.players[playerId];
+    this.countdown_timer_dt += dt;
+    if (this.countdown_timer_dt > 1000) {
+      this.countdown_timer_dt = 0;
+      this.countdown_timer -= 1000;
+      updateTimerState(this.gameId, this.countdown_timer);
+    }
+
+    this.movePlayer(currentPlayer);
+
+    // stop the smoothing if players are at the target position
+    Object.keys(this.players).forEach((playerId) => {
+      if (this.playerId !== playerId) {
+        const player = this.players[playerId];
+        if (this.hasArrived(player)) {
+          player.playerSprite.body.reset(player.targetPos.x, player.targetPos.y);
+        }
+        // update the player name position
+        player.playerName.x = Math.floor(player.playerSprite.x - player.playerName.width / 2);
+        player.playerName.y = Math.floor(player.playerSprite.y - player.playerName.height / 2 - 50);
+      }
+    });
   }
 
   // update the game based on the data we are getting
   onGameDataChange(gameData: any) {
     this.playerId = gameData.uid;
     this.gameId = gameData.gameId;
+    this.countdown_timer = gameData.timer;
 
     // current player left the game
     if (!gameData.gameId) {
@@ -119,75 +128,103 @@ export default class Lobby extends Phaser.Scene {
     Object.keys(gameData.players).forEach((playerId) => {
       // spawn if the player doesn't exist already
       if (!this.players[playerId]) {
-        this.spawnPlayer(playerId);
+        this.spawnPlayer(
+          playerId,
+          gameData.players[playerId].xPos,
+          gameData.players[playerId].yPos,
+          gameData.players[playerId].isInverted
+        );
       }
 
-      // move other players
       if (playerId != gameData.uid) {
-        this.movePlayerToPos(
-          this.players[playerId],
-          gameData.players[playerId].xPos || 140,
-          gameData.players[playerId].yPos || 140
-        );
+        const player = this.players[playerId];
+        // move other players
+        // this.movePlayerToPos(this.players[playerId], gameData.players[playerId].xPos, gameData.players[playerId].yPos)
+        this.players[playerId].targetPos = {
+          x: gameData.players[playerId].xPos,
+          y: gameData.players[playerId].yPos,
+        };
+        this.movePlayerToPosSmooth(player);
+
+        // invert the other players
+        player.isInverted = gameData.players[playerId].isInverted;
+        this.setPlayerDirection(player, player.isInverted);
       }
     });
   }
 
-  movePlayer(currentPlayer: any) {
+  spawnCrate(playerId: string, x: number, y: number) {
+    const crate = this.physics.add.sprite(x, y, "sprites", 63);
+    crate.setScale(scaleUp);
+    this.crates.add(crate);
+  }
+
+  spawnPlayer(playerId: string, x: number, y: number, isInverted: boolean) {
+    this.players[playerId] = {
+      targetPos: { x: 140, y: 140 },
+      isInverted,
+      playerSprite: this.physics.add.sprite(x, y, "sprites", 85),
+      playerName: this.add.bitmapText(x, y, "pixeled", "", 8),
+    };
+
+    this.players[playerId].playerSprite.setScale(scaleUp);
+    // physics collision
+    this.physics.add.collider(this.players[playerId].playerSprite, this.walls);
+
+    // displaying the player name
+    this.players[playerId].playerName.setText(playerId);
+  }
+
+  destroyPlayer(playerId: string) {
+    this.players[playerId].playerSprite.destroy();
+    this.players[playerId].playerName.destroy();
+    delete this.players[playerId];
+  }
+
+  setPlayerDirection(player: Player, inverted: boolean) {
+    player.playerSprite.scaleX = scaleUp * (inverted ? -1 : 1);
+    player.playerSprite.body.offset.x = inverted ? 16 : 0;
+    player.isInverted = inverted;
+    if (!inverted) player.playerSprite.scaleX = scaleUp;
+  }
+
+  movePlayer(currentPlayer: Player) {
     // basic player movement
     if (this.cursors.left?.isDown) {
-      currentPlayer.player_sprite.setVelocity(-this.player_speed, 0);
-      currentPlayer.player_sprite.scaleX = -scaleUp;
-      currentPlayer.player_sprite.body.offset.x = 16;
+      currentPlayer.playerSprite.setVelocity(-this.player_speed, 0);
+      this.setPlayerDirection(currentPlayer, true);
     } else if (this.cursors.right?.isDown) {
-      currentPlayer.player_sprite.setVelocity(this.player_speed, 0);
-      currentPlayer.player_sprite.scaleX = scaleUp;
-      currentPlayer.player_sprite.body.offset.x = 0;
+      currentPlayer.playerSprite.setVelocity(this.player_speed, 0);
+      this.setPlayerDirection(currentPlayer, false);
     } else if (this.cursors.up?.isDown) {
-      currentPlayer.player_sprite.setVelocity(0, -this.player_speed);
+      currentPlayer.playerSprite.setVelocity(0, -this.player_speed);
     } else if (this.cursors.down?.isDown) {
-      currentPlayer.player_sprite.setVelocity(0, this.player_speed);
+      currentPlayer.playerSprite.setVelocity(0, this.player_speed);
     } else {
-      currentPlayer.player_sprite.setVelocity(0, 0);
+      currentPlayer.playerSprite.setVelocity(0, 0);
     }
 
     // move the player name
-    currentPlayer.player_name.x = Math.floor(
-      currentPlayer.player_sprite.x - currentPlayer.player_sprite.width / 2
-    );
-    currentPlayer.player_name.y = Math.floor(
-      currentPlayer.player_sprite.y -
-        currentPlayer.player_sprite.height / 2 -
-        50
-    );
+    currentPlayer.playerName.x = Math.floor(currentPlayer.playerSprite.x - currentPlayer.playerName.width / 2);
+    currentPlayer.playerName.y = Math.floor(currentPlayer.playerSprite.y - currentPlayer.playerName.height / 2 - 50);
   }
 
-  movePlayerToPos(player: any, x: number, y: number) {
-    player.player_sprite.x = x;
-    player.player_sprite.y = y;
-    player.player_name.x = Math.floor(
-      player.player_sprite.x - player.player_sprite.width / 2
-    );
-    player.player_name.y = Math.floor(
-      player.player_sprite.y - player.player_sprite.height / 2 - 50
-    );
+  // without smoothing
+  movePlayerToPos(player: Player, x: number, y: number) {
+    player.playerSprite.x = x;
+    player.playerSprite.y = y;
+    player.playerName.x = Math.floor(player.playerSprite.x - player.playerName.width / 2);
+    player.playerName.y = Math.floor(player.playerSprite.y - player.playerName.height / 2 - 50);
   }
 
-  update(t: number, dt: number) {
-    const currentPlayer = this.players[this.playerId];
+  movePlayerToPosSmooth(player: Player) {
+    this.physics.moveTo(player.playerSprite, player.targetPos.x, player.targetPos.y, this.player_speed, 200);
+  }
 
-    if (!this.cursors || !currentPlayer) return;
-
-    this.update_timer += dt;
-    if (this.update_timer > 200) {
-      this.update_timer = 0;
-      (this.game as any).onUpdate({
-        gameId: this.gameId,
-        playerX: currentPlayer.player_sprite.x,
-        playerY: currentPlayer.player_sprite.y,
-      });
-    }
-
-    this.movePlayer(currentPlayer);
+  hasArrived(player: Player) {
+    return (
+      Math.abs(player.playerSprite.x - player.targetPos.x) < 10 &&
+      Math.abs(player.playerSprite.y - player.targetPos.y) < 10
+    );
   }
 }

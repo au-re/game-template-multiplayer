@@ -5,8 +5,6 @@ import "./firebase";
 import { App } from "./App";
 
 // Mount React UI
-ReactDOM.createRoot(document.getElementById("app") as HTMLElement).render(
-  <App />
-);
+ReactDOM.createRoot(document.getElementById("app") as HTMLElement).render(<App />);
 
 // Test ( Thanish )

@@ -1,21 +1,8 @@
 import React from "react";
-import { Game } from "./Game";
 import { doc, setDoc, onSnapshot, deleteField } from "firebase/firestore";
 import { getAuth, onAuthStateChanged } from "firebase/auth";
+import { GameState, GameStatus } from "../typings";
 import { db } from "../firebase";
-
-interface PlayerState {
-  xPos: number;
-  yPos: number;
-}
-
-interface GameState {
-  host: string;
-  status: "menu" | "lobby" | "game";
-  playerState: {
-    [playerId: string]: PlayerState;
-  };
-}
 
 interface LocalState {
   isAuthenticated: boolean;
@@ -31,28 +18,21 @@ const initialLocalState = {
 
 export const GameStateContext = React.createContext({
   localState: initialLocalState,
-  gameState: { playerState: {} },
+  gameState: { players: {} },
   createGame: () => {},
   joinGame: (gameId: string) => {},
   leaveGame: () => {},
-  updatePlayerPosition: (xPos: number, yPos: number) => {},
+  startGame: () => {},
 });
 
-export function GameStateWrapper({ children, config }: any) {
-  const [game, setGame] = React.useState<Phaser.Game | null>(null);
-  const [localState, setLocalState] =
-    React.useState<LocalState>(initialLocalState);
-  const [gameState, setGameState] = React.useState<GameState | {}>({});
-
-  // create a reference to the phaser game
-  // callback allows you to update the shared state
-  React.useEffect(() => {
-    setGame(
-      new Game(config, (update) => {
-        updatePlayerPosition(update.gameId, update.playerX, update.playerY);
-      })
-    );
-  }, []);
+export function GameStateWrapper({ children, game }: any) {
+  const [localState, setLocalState] = React.useState<LocalState>(initialLocalState);
+  const [gameState, setGameState] = React.useState<GameState>({
+    host: "",
+    players: {},
+    timer: 20000,
+    status: GameStatus.IN_GAME,
+  });
 
   // subscribe to auth events
   React.useEffect(() => {
@@ -65,7 +45,7 @@ export function GameStateWrapper({ children, config }: any) {
       }
     });
     return () => unsub();
-  }, [game]);
+  }, []);
 
   // if we have joined a game, subscribe to the game state
   React.useEffect(() => {
@@ -83,7 +63,8 @@ export function GameStateWrapper({ children, config }: any) {
     const payload = {
       uid: localState.uid,
       gameId: localState.gameId,
-      players: gameState.playerState || {},
+      players: gameState.players || {},
+      timer: gameState.timer,
     };
     game?.scene.keys.Lobby?.events.emit("game_data", payload);
   }, [game, gameState, localState.gameId]);
@@ -91,14 +72,21 @@ export function GameStateWrapper({ children, config }: any) {
   // actions
   async function createGame() {
     const uid = getAuth().currentUser?.uid;
-
-    if (uid) {
-      await setDoc(doc(db, "games", uid), {
-        host: uid,
-        playerState: { [uid]: {} },
-      });
-      setLocalState({ ...localState, gameId: uid });
-    }
+    if (!uid) return;
+    const initialGameState: GameState = {
+      host: uid,
+      timer: 20000,
+      status: GameStatus.LOBBY,
+      players: {
+        [uid]: {
+          xPos: 140,
+          yPos: 140,
+          isInverted: false,
+        },
+      },
+    };
+    await setDoc(doc(db, "games", uid), initialGameState);
+    setLocalState({ ...localState, gameId: uid });
   }
 
   async function joinGame(gameId: string) {
@@ -107,7 +95,13 @@ export function GameStateWrapper({ children, config }: any) {
       await setDoc(
         doc(db, "games", gameId),
         {
-          playerState: { [uid]: {} },
+          players: {
+            [uid]: {
+              xPos: 140,
+              yPos: 140,
+              isInverted: false,
+            },
+          },
         },
         { merge: true }
       );
@@ -121,7 +115,7 @@ export function GameStateWrapper({ children, config }: any) {
       await setDoc(
         doc(db, "games", localState.gameId),
         {
-          playerState: { [uid]: deleteField() },
+          players: { [uid]: deleteField() },
         },
         { merge: true }
       );
@@ -129,22 +123,17 @@ export function GameStateWrapper({ children, config }: any) {
     }
   }
 
-  async function updatePlayerPosition(
-    gameId: string,
-    xPos: number,
-    yPos: number
-  ) {
+  async function startGame() {
     const uid = getAuth().currentUser?.uid;
-    if (!uid || !gameId) return;
-    await setDoc(
-      doc(db, "games", gameId),
-      {
-        playerState: {
-          [uid]: { xPos, yPos },
+    if (uid) {
+      await setDoc(
+        doc(db, "games", localState.gameId),
+        {
+          status: GameStatus.IN_GAME,
         },
-      },
-      { merge: true }
-    );
+        { merge: true }
+      );
+    }
   }
 
   return (
@@ -155,10 +144,10 @@ export function GameStateWrapper({ children, config }: any) {
         createGame,
         leaveGame,
         joinGame,
+        startGame,
       }}
     >
       {children}
-      <div id="game" />
     </GameStateContext.Provider>
   );
 }
