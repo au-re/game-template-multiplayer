@@ -1,7 +1,14 @@
-export interface PlayerState {
-  xPos: number;
-  yPos: number;
-  isInverted: boolean;
+export enum PlayerDirection {
+  UP,
+  DOWN,
+  LEFT,
+  RIGHT,
+}
+
+export interface LocalState {
+  isAuthenticated: boolean;
+  gameId: string;
+  uid: string;
 }
 
 export interface GameState {
@@ -11,6 +18,12 @@ export interface GameState {
   };
   timer: number;
   status: GameStatus;
+}
+
+export interface PlayerState {
+  xPos: number;
+  yPos: number;
+  direction: PlayerDirection;
 }
 
 export enum GameStatus {

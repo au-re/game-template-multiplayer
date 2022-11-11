@@ -1,7 +1,7 @@
 {
-  "name": "ts-template",
+  "name": "game-template-multiplayer",
   "version": "1.0.0",
-  "description": "Template for game jam games",
+  "description": "Template for prototyping multiplayer games",
   "main": "dist/index.js",
   "scripts": {
     "dev": "vite",

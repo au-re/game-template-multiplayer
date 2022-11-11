@@ -1,10 +1,12 @@
-import React from "react";
+import { default as React } from "react";
 import ReactDOM from "react-dom/client";
+import { phaserConfig } from "./config";
+import { Lobby } from "./scenes/Lobby";
 import "./firebase";
+import { GameUI } from "./ui/GameUI";
 
-import { App } from "./App";
+// create and mount game
+const game = new Phaser.Game({ ...phaserConfig, scene: [Lobby] });
 
-// Mount React UI
-ReactDOM.createRoot(document.getElementById("app") as HTMLElement).render(<App />);
-
-// Test ( Thanish )
+// mount React UI
+ReactDOM.createRoot(document.getElementById("app") as HTMLElement).render(<GameUI game={game} />);

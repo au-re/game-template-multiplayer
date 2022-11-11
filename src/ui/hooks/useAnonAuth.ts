@@ -14,9 +14,7 @@ type AuthState = {
  *
  */
 export const useAnonAuth = () => {
-  const [signedInState, setSignedInState] = React.useState<AuthState>({
-    isLoading: false,
-  });
+  const [signedInState, setSignedInState] = React.useState<AuthState>({ isLoading: false });
 
   React.useEffect(() => {
     const auth = getAuth();
@@ -24,7 +22,7 @@ export const useAnonAuth = () => {
     const signIn = async () => {
       try {
         await signInAnonymously(auth);
-      } catch (error) {
+      } catch (error: any) {
         setSignedInState({
           isLoading: false,
           error: {
