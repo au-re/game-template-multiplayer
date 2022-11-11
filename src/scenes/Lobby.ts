@@ -3,12 +3,14 @@ import { listenToGameStateUpdates } from "../actions";
 import { PlayerActor } from "../actors/PlayerActor";
 import { GameEvents } from "../constants";
 import Background from "../game-objects/Background";
+import CountDown from "../game-objects/CountDown";
 import { GameState, LocalState } from "../typings";
 
 export class Lobby extends Phaser.Scene {
   localState?: LocalState;
   gameState?: GameState;
   background?: Background;
+  countDown?: CountDown;
   unsubFromStateUpdates?: Unsubscribe;
   players: { [uid: string]: PlayerActor } = {};
 
@@ -28,14 +30,18 @@ export class Lobby extends Phaser.Scene {
     this.events.on(GameEvents.LOCAL_STATE_UPDATE, this.onLocalStateUpdate, this);
 
     this.background = new Background(this);
+    this.countDown = new CountDown(this);
   }
 
   onLocalStateUpdate = (localState: LocalState) => {
-    this.localState = localState;
-
-    if (localState.gameId) {
+    // game just started
+    // start listening to db updates
+    if (localState.gameId && !this.localState?.gameId) {
       listenToGameStateUpdates(localState.gameId, this.onGameStateUpdates);
+      this.countDown?.sync(localState.gameId, localState.uid);
     }
+
+    this.localState = localState;
   };
 
   onGameStateUpdates = (gameState: GameState) => {
@@ -98,6 +104,7 @@ export class Lobby extends Phaser.Scene {
   };
 
   update(t: number, dt: number) {
+    this.countDown?.update(dt);
     Object.keys(this.players).forEach((playerId) => this.players[playerId].update(dt));
   }
 }

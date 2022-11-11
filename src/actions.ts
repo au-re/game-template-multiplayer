@@ -53,7 +53,6 @@ export async function joinGame(gameId: string) {
 export async function leaveGame(gameId: string) {
   const uid = getAuth().currentUser?.uid;
   if (!uid || !gameId) return;
-  console.log("leaveGame");
   await setDoc(doc(db, gameCollectionId, gameId), { players: { [uid]: deleteField() } }, { merge: true });
 }
 

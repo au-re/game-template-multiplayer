@@ -24,8 +24,10 @@ export function LoggedInMenu() {
 }
 
 export function LobbyMenu() {
-  const { leaveGame, localState } = useContext(GameStateContext);
-  const { gameId } = localState;
+  const { leaveGame, localState, gameState } = useContext(GameStateContext);
+  const { host } = gameState;
+  const { gameId, uid } = localState;
+  const isHost = uid === host;
   return (
     <div>
       <label>LOBBY</label>
@@ -34,7 +36,7 @@ export function LobbyMenu() {
         <input readOnly value={gameId} />
       </label>
       <button onClick={leaveGame}>leave game</button>
-      <button onClick={() => startGame(gameId)}>Start game</button>
+      {isHost && <button onClick={() => startGame(gameId)}>Start game</button>}
     </div>
   );
 }

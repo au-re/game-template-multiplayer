@@ -1,4 +1,5 @@
 import { updatePlayerState } from "../actions";
+import { tickDuration } from "../constants";
 import { Actor } from "./Actor";
 
 export class PlayerActor extends Actor {
@@ -60,10 +61,10 @@ export class PlayerActor extends Actor {
   }
 
   update(dt: number) {
-    // update the player state every 200ms
+    // update the player state every tickDuration
     if (this.controlled) {
       this.updateTimer += dt;
-      if (this.updateTimer > 200) {
+      if (this.updateTimer > tickDuration) {
         this.updateTimer = 0;
         updatePlayerState(this.gameId, {
           xPos: this.x,

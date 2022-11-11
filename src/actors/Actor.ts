@@ -1,5 +1,5 @@
 import { Physics } from "phaser";
-import { scaleRatio } from "../constants";
+import { scaleRatio, tickDuration } from "../constants";
 import { PlayerDirection } from "../typings";
 
 export class Actor extends Physics.Arcade.Sprite {
@@ -43,11 +43,11 @@ export class Actor extends Physics.Arcade.Sprite {
   }
 
   moveActorToPos() {
-    this.scene.physics.moveTo(this, this.targetPos.x, this.targetPos.y, this.movementSpeed, 200);
+    this.scene.physics.moveTo(this, this.targetPos.x, this.targetPos.y, this.movementSpeed, tickDuration - 10);
   }
 
   hasArrivedToPos() {
-    return Math.abs(this.x - this.targetPos.x) < 10 && Math.abs(this.y - this.targetPos.y) < 10;
+    return Math.abs(this.x - this.targetPos.x) < 4 && Math.abs(this.y - this.targetPos.y) < 4;
   }
 
   getBody() {
