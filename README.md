@@ -1,4 +1,15 @@
-# game jam starter set
+# Template for prototyping multiplayer games
+
+After cloning this repo, you need to add a `.env` file with your firebase environment values:
+
+```
+VITE_API_KEY=xxx
+VITE_AUTH_DOMAIN=xxx
+VITE_PROJECT_ID=xxx
+VITE_STORAGE_BUCKET=xxx
+VITE_MESSAGING_SENDER_ID=xxx
+VITE_APP_ID=xxx
+```
 
 ## Available Commands
 

@@ -1,8 +1,8 @@
 import { default as React } from "react";
 import ReactDOM from "react-dom/client";
 import { phaserConfig } from "./config";
-import { Lobby } from "./scenes/Lobby";
 import "./firebase";
+import { Lobby } from "./scenes/Lobby";
 import { GameUI } from "./ui/GameUI";
 
 // create and mount game

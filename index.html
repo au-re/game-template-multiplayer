@@ -44,11 +44,21 @@
 
       /* custom */
       body {
-        background: darkgrey;
+        background: black;
       }
 
       #app {
+        height: 100%;
         position: absolute;
+      }
+      @font-face {
+          font-family: 'TitanOne';
+          src: local('TitanOne'), url(./assets/fonts/Titan_One/TitanOne-Regular.ttf) format('truetype');
+      }
+
+      @font-face {
+          font-family: 'Pixeled';
+          src: local('Pixeled'), url(./assets/fonts/Pixeled.ttf) format('truetype');
       }
     </style>
     <script type="module" src="/src/index.tsx"></script>
