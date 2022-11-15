@@ -24,9 +24,19 @@ export interface PlayerState {
   xPos: number;
   yPos: number;
   direction: PlayerDirection;
+  gridCell: {
+    x: number;
+    y: number;
+  };
 }
 
 export enum GameStatus {
+  NOT_STARTED,
   LOBBY,
   IN_GAME,
+}
+
+export interface SceneData {
+  localState: LocalState;
+  gameState: GameState;
 }

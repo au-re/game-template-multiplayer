@@ -1,20 +1,26 @@
+import { getAuth } from "firebase/auth";
 import { Physics } from "phaser";
-import { scaleRatio, tickDuration } from "../constants";
+import { scaleRatio } from "../constants";
 import { PlayerDirection } from "../typings";
 
 export class Actor extends Physics.Arcade.Sprite {
   public direction = PlayerDirection.RIGHT;
   public movementSpeed = 400;
-  // used for smoothing network latency
-  public targetPos = {
-    x: 0,
-    y: 0,
-  };
+  public id: string;
+  public name: string;
+  public isLocalPlayer: boolean;
+  private label: Phaser.GameObjects.BitmapText;
 
-  constructor(scene: Phaser.Scene, x: number, y: number, texture: string, frame?: string | number) {
+  constructor(scene: Phaser.Scene, id: string, x: number, y: number, texture: string, frame?: string | number) {
     super(scene, x, y, texture, frame);
     scene.add.existing(this);
     scene.physics.add.existing(this);
+    this.setScale(scaleRatio);
+    this.id = id;
+    this.name = id;
+    this.isLocalPlayer = id === getAuth().currentUser?.uid;
+    this.label = this.scene.add.bitmapText(x, y, "pixeled", "", 9);
+    this.label.setText(this.isLocalPlayer ? "LOCAL" : "REMOTE");
     this.getBody().setCollideWorldBounds(true);
   }
 
@@ -42,15 +48,17 @@ export class Actor extends Physics.Arcade.Sprite {
     }
   }
 
-  moveActorToPos() {
-    this.scene.physics.moveTo(this, this.targetPos.x, this.targetPos.y, this.movementSpeed, tickDuration - 10);
-  }
-
-  hasArrivedToPos() {
-    return Math.abs(this.x - this.targetPos.x) < 4 && Math.abs(this.y - this.targetPos.y) < 4;
-  }
-
   getBody() {
     return this.body as Physics.Arcade.Body;
+  }
+
+  removeActor() {
+    this.label.destroy();
+    this.destroy();
+  }
+
+  update(t: number, dt: number) {
+    this.label.x = Math.floor(this.x - this.label.width / 2);
+    this.label.y = Math.floor(this.y - this.label.height / 2 - 50);
   }
 }

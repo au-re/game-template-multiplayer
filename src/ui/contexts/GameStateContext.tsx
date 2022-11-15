@@ -58,7 +58,9 @@ export function GameStateWrapper({ children, game }: any) {
 
   // on local state changes, pass the state down to phaser
   React.useEffect(() => {
-    game?.scene.keys.Lobby?.events.emit(GameEvents.LOCAL_STATE_UPDATE, localState);
+    Object.keys(game?.scene.keys).forEach((key) => {
+      game?.scene.keys[key].events.emit(GameEvents.LOCAL_STATE_UPDATE, localState);
+    });
   }, [game, localState]);
 
   // actions that update the local state
@@ -70,8 +72,12 @@ export function GameStateWrapper({ children, game }: any) {
   }
 
   async function _joinGame(gameId: string) {
-    setLocalState({ ...localState, gameId });
-    await joinGame(gameId);
+    try {
+      await joinGame(gameId);
+      setLocalState({ ...localState, gameId });
+    } catch (error) {
+      console.log(error);
+    }
   }
 
   async function _leaveGame() {

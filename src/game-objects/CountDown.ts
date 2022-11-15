@@ -1,5 +1,5 @@
 import { listenToGameStateUpdates, updateTimerState } from "../actions";
-import { GameState, GameStatus, LocalState } from "../typings";
+import { GameState, GameStatus } from "../typings";
 
 export default class CountDown extends Phaser.GameObjects.Container {
   countdownTimerDT = 0;

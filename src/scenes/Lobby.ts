@@ -1,110 +1,66 @@
-import { Unsubscribe } from "firebase/firestore";
-import { listenToGameStateUpdates } from "../actions";
-import { PlayerActor } from "../actors/PlayerActor";
-import { GameEvents } from "../constants";
+import { Actor } from "../game-objects/Actor";
 import Background from "../game-objects/Background";
-import CountDown from "../game-objects/CountDown";
-import { GameState, LocalState } from "../typings";
+import { ContinuousMovement } from "../mixins/ContinuousMovement";
+import { SyncPosition } from "../mixins/SyncPosition";
+import { SyncState } from "../mixins/SyncState";
+import { GameState, SceneData } from "../typings";
 
-export class Lobby extends Phaser.Scene {
-  localState?: LocalState;
-  gameState?: GameState;
+export class Lobby extends SyncState(Phaser.Scene) {
   background?: Background;
-  countDown?: CountDown;
-  unsubFromStateUpdates?: Unsubscribe;
-  players: { [uid: string]: PlayerActor } = {};
+  players: { [uid: string]: Actor } = {};
 
   constructor() {
     super("Lobby");
   }
 
-  preload() {
-    this.load.bitmapFont("pixeled", "assets/fonts/Pixeled.png", "assets/fonts/Pixeled.xml");
-    this.load.spritesheet("sprites", "assets/tilemaps/tilemap_packed.png", { frameWidth: 16, frameHeight: 16 });
-    this.load.image("tiles", "assets/tilemaps/tilemap_packed.png");
-    this.load.tilemapTiledJSON("background", "assets/tilemaps/background.json");
+  init(sceneData: SceneData) {
+    const { localState, gameState } = sceneData;
+    this.localState = localState;
+    this.gameState = gameState;
+    this.players = {};
   }
 
   create() {
-    // listen to events
-    this.events.on(GameEvents.LOCAL_STATE_UPDATE, this.onLocalStateUpdate, this);
-
+    super.create();
     this.background = new Background(this);
-    this.countDown = new CountDown(this);
   }
 
-  onLocalStateUpdate = (localState: LocalState) => {
-    // game just started
-    // start listening to db updates
-    if (localState.gameId && !this.localState?.gameId) {
-      listenToGameStateUpdates(localState.gameId, this.onGameStateUpdates);
-      this.countDown?.sync(localState.gameId, localState.uid);
+  spawnPlayer(x: number, y: number, gameId: string, playerId: string) {
+    const SynchedPlayer = ContinuousMovement(SyncPosition(Actor, gameId));
+    const player = new SynchedPlayer(this, playerId, x, y, "sprites", 85);
+
+    if (this.background?.walls) {
+      this.physics.add.collider(player, this.background.walls);
     }
 
-    this.localState = localState;
+    this.players[playerId] = player;
+  }
+
+  onGameJoined = (gameId: string, playerId: string) => {
+    this.spawnPlayer(140, 140, gameId, playerId);
   };
 
-  onGameStateUpdates = (gameState: GameState) => {
+  onGameLeft = () => {
+    Object.values(this.players).forEach((player) => {
+      player.removeActor();
+    });
+    this.players = {};
+  };
+
+  onPlayerLeft = (playerId: string) => {
+    this.players[playerId].removeActor();
+    delete this.players[playerId];
+  };
+
+  onPlayerJoined = (playerId: string, gameState: GameState) => {
     const gameId = this.localState?.gameId;
-    const uid = this.localState?.uid;
-
-    this.gameState = gameState;
-
-    // current player left the game
-    if (!gameId) {
-      Object.keys(this.players).forEach((playerId) => {
-        this.players[playerId].removePlayer();
-        delete this.players[playerId];
-      });
-      return;
-    }
-
-    // other player left the game
-    Object.keys(this.players).forEach((playerId) => {
-      if (!gameState.players[playerId]) {
-        this.players[playerId].removePlayer();
-        delete this.players[playerId];
-      }
-    });
-
-    // for each player in the game state
-    Object.keys(gameState.players).forEach((playerId) => {
-      // spawn if the player doesn't exist already
-      if (!this.players[playerId]) {
-        const isSelf = playerId === this.localState?.uid;
-        const player = new PlayerActor(
-          this,
-          gameState.players[playerId].xPos,
-          gameState.players[playerId].yPos,
-          playerId,
-          gameId,
-          isSelf
-        );
-
-        if (this.background?.walls) {
-          this.physics.add.collider(player, this.background.walls);
-        }
-
-        this.players[playerId] = player;
-      }
-
-      // move other players
-      if (playerId != uid) {
-        const player = this.players[playerId];
-
-        player.targetPos = {
-          x: gameState.players[playerId].xPos,
-          y: gameState.players[playerId].yPos,
-        };
-
-        player.moveActorToPos();
-        player.setDirection(gameState.players[playerId].direction);
-      }
-    });
+    if (!gameId || !gameState) return;
+    this.spawnPlayer(gameState.players[playerId].xPos, gameState.players[playerId].yPos, gameId, playerId);
   };
 
-  update(t: number, dt: number) {
-    this.countDown?.update(dt);
-    Object.keys(this.players).forEach((playerId) => this.players[playerId].update(dt));
-  }
+  update = (t: number, dt: number) => {
+    Object.keys(this.players).forEach((playerId) => {
+      this.players[playerId].update(t, dt);
+    });
+  };
 }

@@ -1,7 +1,7 @@
 import { getAuth } from "firebase/auth";
-import { deleteField, doc, onSnapshot, setDoc } from "firebase/firestore";
+import { deleteField, doc, getDoc, onSnapshot, setDoc } from "firebase/firestore";
 import { db } from "./firebase";
-import { GameState, GameStatus, PlayerState } from "./typings";
+import { GameState, GameStatus, PlayerDirection, PlayerState } from "./typings";
 
 export const gameCollectionId = "games";
 
@@ -23,17 +23,21 @@ export async function createGame(gameId: string) {
       [uid]: {
         xPos: 140,
         yPos: 140,
-        isInverted: false,
+        direction: PlayerDirection.RIGHT,
       },
     },
-  });
+  } as Partial<GameState>);
 }
 
 export async function joinGame(gameId: string) {
   const uid = getAuth().currentUser?.uid;
   if (!uid || !gameId) return;
 
-  // TODO: check if the game already exists
+  // only join a game if the game exists and is currently in the lobby
+  const game = await getDoc(doc(db, gameCollectionId, gameId));
+  if (!game.exists() || !game.data()?.status || game.data().status != GameStatus.LOBBY) {
+    throw new Error("CANNOT_CONNECT_TO_GAME");
+  }
 
   await setDoc(
     doc(db, gameCollectionId, gameId),
@@ -42,10 +46,10 @@ export async function joinGame(gameId: string) {
         [uid]: {
           xPos: 140,
           yPos: 140,
-          isInverted: false,
+          direction: PlayerDirection.RIGHT,
         },
       },
-    },
+    } as Partial<GameState>,
     { merge: true }
   );
 }
@@ -53,6 +57,12 @@ export async function joinGame(gameId: string) {
 export async function leaveGame(gameId: string) {
   const uid = getAuth().currentUser?.uid;
   if (!uid || !gameId) return;
+  // TODO: reset the game if the host left
+  // await setDoc(
+  //   doc(db, gameCollectionId, gameId),
+  //   { status: GameStatus.NOT_STARTED, players: {} } as Partial<GameState>,
+  //   { merge: true }
+  // );
   await setDoc(doc(db, gameCollectionId, gameId), { players: { [uid]: deleteField() } }, { merge: true });
 }
 
@@ -62,7 +72,7 @@ export async function startGame(gameId: string) {
   await setDoc(doc(db, gameCollectionId, gameId), { status: GameStatus.IN_GAME }, { merge: true });
 }
 
-export async function updatePlayerState(gameId: string, player: PlayerState) {
+export async function syncPlayerState(gameId: string, player: PlayerState) {
   const uid = getAuth().currentUser?.uid;
   if (!uid || !gameId) return;
   await setDoc(doc(db, gameCollectionId, gameId), { players: { [uid]: player } }, { merge: true });
@@ -70,4 +80,10 @@ export async function updatePlayerState(gameId: string, player: PlayerState) {
 
 export async function updateTimerState(gameId: string, timer: number) {
   await setDoc(doc(db, gameCollectionId, gameId), { timer }, { merge: true });
+}
+
+export async function updatePlayerGridPos(gameId: string, gridCell: { x: number; y: number }) {
+  const uid = getAuth().currentUser?.uid;
+  if (!uid || !gameId) return;
+  await setDoc(doc(db, gameCollectionId, gameId), { players: { [uid]: { gridCell } } }, { merge: true });
 }
