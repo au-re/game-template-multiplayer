@@ -8,7 +8,6 @@ export const Menu = styled.div`
   flex-direction: column;
 
   font-weight: 400;
-  text-transform: uppercase;
 
   text-align: center;
 `;

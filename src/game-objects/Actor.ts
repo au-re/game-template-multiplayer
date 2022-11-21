@@ -1,4 +1,3 @@
-import { getAuth } from "firebase/auth";
 import { Physics } from "phaser";
 import { scaleRatio } from "../constants";
 import { PlayerDirection } from "../typings";
@@ -8,19 +7,25 @@ export class Actor extends Physics.Arcade.Sprite {
   public movementSpeed = 400;
   public id: string;
   public name: string;
-  public isLocalPlayer: boolean;
   private label: Phaser.GameObjects.BitmapText;
 
-  constructor(scene: Phaser.Scene, id: string, x: number, y: number, texture: string, frame?: string | number) {
+  constructor(
+    scene: Phaser.Scene,
+    id: string,
+    label: string,
+    x: number,
+    y: number,
+    texture: string,
+    frame?: string | number
+  ) {
     super(scene, x, y, texture, frame);
     scene.add.existing(this);
     scene.physics.add.existing(this);
     this.setScale(scaleRatio);
     this.id = id;
     this.name = id;
-    this.isLocalPlayer = id === getAuth().currentUser?.uid;
     this.label = this.scene.add.bitmapText(x, y, "pixeled", "", 9);
-    this.label.setText(this.isLocalPlayer ? "LOCAL" : "REMOTE");
+    this.label.setText(label || "");
     this.getBody().setCollideWorldBounds(true);
   }
 

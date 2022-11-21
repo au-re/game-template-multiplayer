@@ -3,6 +3,10 @@ import { GameEvents } from "../constants";
 import { GameState, GameStatus, LocalState } from "../typings";
 import { Constructor } from "./types";
 
+/**
+ * Synchronize Scene state with the cloud
+ *
+ */
 export function SyncState<TBase extends Constructor<Phaser.Scene>>(Base: TBase) {
   return class SyncState extends Base {
     localState?: LocalState;
@@ -14,6 +18,7 @@ export function SyncState<TBase extends Constructor<Phaser.Scene>>(Base: TBase) 
     public onGameJoined!: (gameId: string, playerId: string) => void;
     public onPlayerLeft!: (playerId: string, newGameState: GameState) => void;
     public onPlayerJoined!: (playerId: string, newGameState: GameState) => void;
+    public onGameStarted: () => void = () => {};
 
     constructor(...args: any[]) {
       super(...args);
@@ -44,12 +49,9 @@ export function SyncState<TBase extends Constructor<Phaser.Scene>>(Base: TBase) 
     onGameStateUpdates = (gameState: GameState) => {
       if (!this.localState?.gameId) return;
 
-      // TODO: move navigation elsewhere
-      // navigation changes
       if (this.gameState?.status !== GameStatus.IN_GAME && gameState.status === GameStatus.IN_GAME) {
-        this.scene.start("GridGame", { localState: this.localState, gameState });
+        this.onGameStarted();
       }
-      // ---
 
       // other player left the game
       Object.keys(this.gameState?.players || {}).forEach((playerId) => {
@@ -69,5 +71,7 @@ export function SyncState<TBase extends Constructor<Phaser.Scene>>(Base: TBase) 
 
       this.gameState = gameState;
     };
+
+    // TODO: unsubscribe from state updates on destroy
   };
 }

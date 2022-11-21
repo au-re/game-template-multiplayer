@@ -13,6 +13,7 @@ export interface LocalState {
 
 export interface GameState {
   host: string;
+  grid: GridState;
   players: {
     [key: string]: PlayerState;
   };
@@ -20,14 +21,16 @@ export interface GameState {
   status: GameStatus;
 }
 
+export interface GridState {
+  players: {
+    [key: string]: { xPos: number; yPos: number };
+  };
+}
+
 export interface PlayerState {
   xPos: number;
   yPos: number;
   direction: PlayerDirection;
-  gridCell: {
-    x: number;
-    y: number;
-  };
 }
 
 export enum GameStatus {

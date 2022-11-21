@@ -1,14 +1,15 @@
+import { getAuth } from "firebase/auth";
 import { scaleRatio } from "../constants";
 import { Actor } from "../game-objects/Actor";
 import CountDown from "../game-objects/CountDown";
 import { Grid } from "../game-objects/Grid";
 import { GridMovement } from "../mixins/GridMovement";
-import { SyncState as SyncState } from "../mixins/SyncState";
+import { SyncGrid } from "../mixins/SyncGrid";
+import { SyncState } from "../mixins/SyncState";
 import { SceneData } from "../typings";
 
 export class GridGame extends SyncState(Phaser.Scene) {
   countDown?: CountDown;
-  players: { [uid: string]: Phaser.Physics.Arcade.Sprite } = {};
   grid!: Grid;
 
   constructor() {
@@ -23,7 +24,9 @@ export class GridGame extends SyncState(Phaser.Scene) {
 
   create() {
     super.create();
-    this.grid = new Grid(this, 320, 320, 4, 4, 32 * scaleRatio);
+
+    const GameGrid = SyncGrid(Grid, this.localState!.gameId);
+    this.grid = new GameGrid(this, 320, 320, 4, 4, 32 * scaleRatio);
     this.countDown = new CountDown(this);
     this.countDown?.sync(this.localState!.gameId, this.localState!.uid);
 
@@ -33,18 +36,35 @@ export class GridGame extends SyncState(Phaser.Scene) {
   }
 
   spawnPlayer(playerId: string) {
-    const Player = GridMovement(Phaser.Physics.Arcade.Sprite, this.grid);
-    const player = new Player(this, 0, 0, "sprites", 85);
-    player.scale = 4;
-    this.players[playerId] = player;
-    this.grid.setItemAt(player, 0, 0);
+    const isLocalPlayer = playerId === getAuth().currentUser?.uid;
+    const LocalPlayer = GridMovement(Actor, this.grid);
+    const RemotePlayer = Actor;
+    let player = isLocalPlayer
+      ? new LocalPlayer(this, playerId, "LOCAL", 0, 0, "sprites", 85)
+      : new RemotePlayer(this, playerId, "REMOTE", 0, 0, "sprites", 85);
+    this.grid.placeItem(player, 0, 0);
   }
+
+  onGameLeft = () => {
+    // TODO: add reset grid function
+    Object.values(this.grid.itemRef).forEach((player) => {
+      player.removeActor();
+    });
+    this.grid.itemRef = {};
+  };
+
+  onPlayerLeft = (playerId: string) => {
+    this.grid.itemRef[playerId].removeActor();
+    delete this.grid.itemRef[playerId];
+  };
 
   update(t: number, dt: number) {
     this.countDown?.update(dt);
 
-    // TODO: move navigation elsewhere
+    // TODO: move scene change elsewhere
     if (!this.localState?.gameId) {
+      this.grid.destroy();
+      this.countDown?.destroy();
       this.scene.start("Lobby", { localState: this.localState, gameState: this.gameState });
     }
   }

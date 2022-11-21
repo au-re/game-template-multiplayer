@@ -1,12 +1,11 @@
 import { scaleRatio } from "../constants";
+import { Actor } from "../game-objects/Actor";
 import { Grid } from "../game-objects/Grid";
 import { PlayerDirection } from "../typings";
 import { Constructor } from "./types";
 
-export function GridMovement<TBase extends Constructor<Phaser.GameObjects.Sprite>>(Base: TBase, grid: Grid) {
+export function GridMovement<TBase extends Constructor<Actor>>(Base: TBase, grid: Grid) {
   return class GridMovement extends Base {
-    gridX = 0;
-    gridY = 0;
     direction = PlayerDirection.RIGHT;
 
     constructor(...args: any[]) {
@@ -21,31 +20,35 @@ export function GridMovement<TBase extends Constructor<Phaser.GameObjects.Sprite
     }
 
     moveUp = () => {
-      const newY = this.gridY - 1;
-      if (grid.moveFromTo(this.gridX, this.gridY, this.gridX, newY)) {
-        this.gridY = newY;
+      const { xPos, yPos } = grid.grid.players[this.id];
+      const newYPos = yPos - 1;
+      if (grid.canPlaceAt(xPos, newYPos)) {
+        grid.moveByItemId(this.id, xPos, newYPos);
       }
     };
 
     moveDown = () => {
-      const newY = this.gridY + 1;
-      if (grid.moveFromTo(this.gridX, this.gridY, this.gridX, newY)) {
-        this.gridY = newY;
+      const { xPos, yPos } = grid.grid.players[this.id];
+      const newYPos = yPos + 1;
+      if (grid.canPlaceAt(xPos, newYPos)) {
+        grid.moveByItemId(this.id, xPos, newYPos);
       }
     };
 
     moveLeft = () => {
-      const newX = this.gridX - 1;
-      if (grid.moveFromTo(this.gridX, this.gridY, newX, this.gridY)) {
-        this.gridX = newX;
+      const { xPos, yPos } = grid.grid.players[this.id];
+      const newXPos = xPos - 1;
+      if (grid.canPlaceAt(newXPos, yPos)) {
+        grid.moveByItemId(this.id, newXPos, yPos);
         this.setDirection(PlayerDirection.LEFT);
       }
     };
 
     moveRight = () => {
-      const newX = this.gridX + 1;
-      if (grid.moveFromTo(this.gridX, this.gridY, newX, this.gridY)) {
-        this.gridX = newX;
+      const { xPos, yPos } = grid.grid.players[this.id];
+      const newXPos = xPos + 1;
+      if (grid.canPlaceAt(newXPos, yPos)) {
+        grid.moveByItemId(this.id, newXPos, yPos);
         this.setDirection(PlayerDirection.RIGHT);
       }
     };

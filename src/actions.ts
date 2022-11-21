@@ -19,6 +19,7 @@ export async function createGame(gameId: string) {
     host: uid,
     timer: 20000,
     status: GameStatus.LOBBY,
+    grid: { players: {} },
     players: {
       [uid]: {
         xPos: 140,
@@ -63,7 +64,11 @@ export async function leaveGame(gameId: string) {
   //   { status: GameStatus.NOT_STARTED, players: {} } as Partial<GameState>,
   //   { merge: true }
   // );
-  await setDoc(doc(db, gameCollectionId, gameId), { players: { [uid]: deleteField() } }, { merge: true });
+  await setDoc(
+    doc(db, gameCollectionId, gameId),
+    { grid: { players: { [uid]: deleteField() } }, players: { [uid]: deleteField() } },
+    { merge: true }
+  );
 }
 
 export async function startGame(gameId: string) {
@@ -72,7 +77,7 @@ export async function startGame(gameId: string) {
   await setDoc(doc(db, gameCollectionId, gameId), { status: GameStatus.IN_GAME }, { merge: true });
 }
 
-export async function syncPlayerState(gameId: string, player: PlayerState) {
+export async function syncPlayerState(gameId: string, player: Partial<PlayerState>) {
   const uid = getAuth().currentUser?.uid;
   if (!uid || !gameId) return;
   await setDoc(doc(db, gameCollectionId, gameId), { players: { [uid]: player } }, { merge: true });
@@ -82,8 +87,12 @@ export async function updateTimerState(gameId: string, timer: number) {
   await setDoc(doc(db, gameCollectionId, gameId), { timer }, { merge: true });
 }
 
-export async function updatePlayerGridPos(gameId: string, gridCell: { x: number; y: number }) {
+export async function updatePlayerGridPos(gameId: string, playerId: string, xPos: number, yPos: number) {
   const uid = getAuth().currentUser?.uid;
   if (!uid || !gameId) return;
-  await setDoc(doc(db, gameCollectionId, gameId), { players: { [uid]: { gridCell } } }, { merge: true });
+  await setDoc(
+    doc(db, gameCollectionId, gameId),
+    { grid: { players: { [playerId]: { xPos, yPos } } } },
+    { merge: true }
+  );
 }

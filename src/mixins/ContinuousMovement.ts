@@ -21,8 +21,6 @@ export function ContinuousMovement<TBase extends Constructor<Actor>>(Base: TBase
     update(t: number, dt: number) {
       super.update(t, dt);
 
-      if (!this.isLocalPlayer) return;
-
       this.getBody()?.setVelocity(0);
 
       if (this.keyW?.isDown) {
