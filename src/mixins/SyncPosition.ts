@@ -47,7 +47,7 @@ export function SyncPosition<TBase extends Constructor<Actor>>(Base: TBase, game
     }
 
     destroy(...args: any[]) {
-      this.body.reset(0, 0);
+      this.unsubFromGameStateUpdates();
       super.destroy(...args);
     }
 

@@ -14,7 +14,9 @@ const initialLocalState = {
 
 const initialGameState = {
   host: "",
+  grid: { players: {} },
   players: {},
+  gameOver: false,
   timer: 0,
   status: GameStatus.LOBBY,
 };

@@ -56,6 +56,7 @@ export class Lobby extends SyncState(Phaser.Scene) {
   };
 
   onPlayerLeft = (playerId: string) => {
+    if (!this.players[playerId]) return;
     this.players[playerId].removeActor();
     delete this.players[playerId];
   };

@@ -3,13 +3,16 @@ import { scaleRatio } from "../constants";
 import { Actor } from "../game-objects/Actor";
 import CountDown from "../game-objects/CountDown";
 import { Grid } from "../game-objects/Grid";
+import Jukebox from "../game-objects/Jukebox";
 import { GridMovement } from "../mixins/GridMovement";
+import { MoveOnBeat } from "../mixins/MoveOnBeat";
 import { SyncGrid } from "../mixins/SyncGrid";
 import { SyncState } from "../mixins/SyncState";
 import { SceneData } from "../typings";
 
 export class GridGame extends SyncState(Phaser.Scene) {
   countDown?: CountDown;
+  jukebox?: Jukebox;
   grid!: Grid;
 
   constructor() {
@@ -25,10 +28,17 @@ export class GridGame extends SyncState(Phaser.Scene) {
   create() {
     super.create();
 
-    const GameGrid = SyncGrid(Grid, this.localState!.gameId);
+    const gameId = this.localState!.gameId;
+    const isHost = getAuth().currentUser?.uid === gameId;
+
+    const GameGrid = SyncGrid(Grid, gameId);
     this.grid = new GameGrid(this, 320, 320, 4, 4, 32 * scaleRatio);
-    this.countDown = new CountDown(this);
-    this.countDown?.sync(this.localState!.gameId, this.localState!.uid);
+
+    this.countDown = new CountDown(this, gameId, isHost);
+    this.countDown.sync();
+
+    this.jukebox = new Jukebox(this, gameId, isHost);
+    this.jukebox.sync();
 
     Object.keys(this.gameState?.players || {}).forEach((playerId) => {
       this.spawnPlayer(playerId);
@@ -37,7 +47,7 @@ export class GridGame extends SyncState(Phaser.Scene) {
 
   spawnPlayer(playerId: string) {
     const isLocalPlayer = playerId === getAuth().currentUser?.uid;
-    const LocalPlayer = GridMovement(Actor, this.grid);
+    const LocalPlayer = MoveOnBeat(GridMovement(Actor, this.grid));
     const RemotePlayer = Actor;
     let player = isLocalPlayer
       ? new LocalPlayer(this, playerId, "LOCAL", 0, 0, "sprites", 85)
@@ -59,7 +69,12 @@ export class GridGame extends SyncState(Phaser.Scene) {
   };
 
   update(t: number, dt: number) {
-    this.countDown?.update(dt);
+    this.countDown?.update(t, dt);
+    this.jukebox?.update(t, dt);
+
+    Object.keys(this.grid.itemRef).forEach((playerId) => {
+      this.grid.itemRef[playerId].update(t, dt);
+    });
 
     // TODO: move scene change elsewhere
     if (!this.localState?.gameId) {

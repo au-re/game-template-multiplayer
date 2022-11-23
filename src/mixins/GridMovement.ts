@@ -6,20 +6,19 @@ import { Constructor } from "./types";
 
 export function GridMovement<TBase extends Constructor<Actor>>(Base: TBase, grid: Grid) {
   return class GridMovement extends Base {
-    direction = PlayerDirection.RIGHT;
-
     constructor(...args: any[]) {
       super(...args);
       this.scene.add.existing(this);
 
       // KEYS
-      this.scene.input.keyboard.addKey("W").onUp = this.moveUp;
-      this.scene.input.keyboard.addKey("A").onUp = this.moveLeft;
-      this.scene.input.keyboard.addKey("S").onUp = this.moveDown;
-      this.scene.input.keyboard.addKey("D").onUp = this.moveRight;
+      this.scene.input.keyboard.addKey("W").onDown = this.moveUp;
+      this.scene.input.keyboard.addKey("A").onDown = this.moveLeft;
+      this.scene.input.keyboard.addKey("S").onDown = this.moveDown;
+      this.scene.input.keyboard.addKey("D").onDown = this.moveRight;
     }
 
     moveUp = () => {
+      if (!this.canMove) return;
       const { xPos, yPos } = grid.grid.players[this.id];
       const newYPos = yPos - 1;
       if (grid.canPlaceAt(xPos, newYPos)) {
@@ -28,6 +27,7 @@ export function GridMovement<TBase extends Constructor<Actor>>(Base: TBase, grid
     };
 
     moveDown = () => {
+      if (!this.canMove) return;
       const { xPos, yPos } = grid.grid.players[this.id];
       const newYPos = yPos + 1;
       if (grid.canPlaceAt(xPos, newYPos)) {
@@ -36,6 +36,7 @@ export function GridMovement<TBase extends Constructor<Actor>>(Base: TBase, grid
     };
 
     moveLeft = () => {
+      if (!this.canMove) return;
       const { xPos, yPos } = grid.grid.players[this.id];
       const newXPos = xPos - 1;
       if (grid.canPlaceAt(newXPos, yPos)) {
@@ -45,6 +46,7 @@ export function GridMovement<TBase extends Constructor<Actor>>(Base: TBase, grid
     };
 
     moveRight = () => {
+      if (!this.canMove) return;
       const { xPos, yPos } = grid.grid.players[this.id];
       const newXPos = xPos + 1;
       if (grid.canPlaceAt(newXPos, yPos)) {

@@ -1,40 +1,46 @@
-import { listenToGameStateUpdates, updateTimerState } from "../actions";
+import { listenToGameStateUpdates, setGameOver, updateTimerState } from "../actions";
 import { GameState, GameStatus } from "../typings";
 
 export default class CountDown extends Phaser.GameObjects.Container {
   countdownTimerDT = 0;
-  gameId? = "";
-  playerId? = "";
+  gameId = "";
+  isHost = false;
   gameState?: GameState;
+  unsubFromGameStateUpdates!: () => void;
 
-  constructor(scene: Phaser.Scene) {
+  constructor(scene: Phaser.Scene, gameId: string, isHost: boolean) {
     super(scene);
+    this.gameId = gameId;
+    this.isHost = isHost;
   }
 
-  sync(gameId: string, playerId: string) {
-    this.gameId = gameId;
-    this.playerId = playerId;
-    listenToGameStateUpdates(gameId, this.onGameStateUpdates);
+  sync() {
+    this.unsubFromGameStateUpdates = listenToGameStateUpdates(this.gameId, this.onGameStateUpdates);
   }
 
   onGameStateUpdates = (gameState: GameState) => {
     this.gameState = gameState;
   };
 
-  update(dt: number) {
-    const isHost = this.gameState?.host && this.playerId === this.gameState?.host;
+  update(t: number, dt: number) {
     const isGameStarted = this.gameId && this.gameState?.status === GameStatus.IN_GAME;
 
-    if (isHost && isGameStarted && this.gameState?.timer) {
+    if (this.isHost && isGameStarted && this.gameState?.timer) {
       this.countdownTimerDT += dt;
       if (this.countdownTimerDT > 1000) {
         this.countdownTimerDT = 0;
         const newTime = this.gameState?.timer - 1000;
+        updateTimerState(this.gameId, newTime);
 
-        // TODO: when reaching 0 do something
-
-        updateTimerState(this.gameId as string, newTime);
+        if (newTime === 0) {
+          setGameOver(this.gameId);
+        }
       }
     }
+  }
+
+  destroy() {
+    this.unsubFromGameStateUpdates?.();
+    super.destroy();
   }
 }

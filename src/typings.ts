@@ -14,6 +14,7 @@ export interface LocalState {
 export interface GameState {
   host: string;
   grid: GridState;
+  gameOver: boolean;
   players: {
     [key: string]: PlayerState;
   };

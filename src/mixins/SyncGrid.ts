@@ -36,8 +36,10 @@ export function SyncGrid<TBase extends Constructor<Grid>>(Base: TBase, gameId: s
     onGameStateUpdates = (gameState: GameState) => {
       const { grid } = gameState;
       Object.keys(grid.players).forEach((playerId) => {
-        // TODO: update the position of each player when the grid updates
-        this.moveByItemId(playerId, grid.players[playerId].xPos, grid.players[playerId].yPos);
+        const isLocalPlayer = playerId === getAuth().currentUser?.uid;
+        if (!isLocalPlayer) {
+          this.moveByItemId(playerId, grid.players[playerId].xPos, grid.players[playerId].yPos);
+        }
       });
 
       this.grid = grid;

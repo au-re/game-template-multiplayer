@@ -5,6 +5,7 @@ import { PlayerDirection } from "../typings";
 export class Actor extends Physics.Arcade.Sprite {
   public direction = PlayerDirection.RIGHT;
   public movementSpeed = 400;
+  public canMove = true;
   public id: string;
   public name: string;
   private label: Phaser.GameObjects.BitmapText;

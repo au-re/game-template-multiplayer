@@ -59,11 +59,6 @@ export async function leaveGame(gameId: string) {
   const uid = getAuth().currentUser?.uid;
   if (!uid || !gameId) return;
   // TODO: reset the game if the host left
-  // await setDoc(
-  //   doc(db, gameCollectionId, gameId),
-  //   { status: GameStatus.NOT_STARTED, players: {} } as Partial<GameState>,
-  //   { merge: true }
-  // );
   await setDoc(
     doc(db, gameCollectionId, gameId),
     { grid: { players: { [uid]: deleteField() } }, players: { [uid]: deleteField() } },
@@ -95,4 +90,8 @@ export async function updatePlayerGridPos(gameId: string, playerId: string, xPos
     { grid: { players: { [playerId]: { xPos, yPos } } } },
     { merge: true }
   );
+}
+
+export async function setGameOver(gameId: string) {
+  await setDoc(doc(db, gameCollectionId, gameId), { gameOver: true }, { merge: true });
 }

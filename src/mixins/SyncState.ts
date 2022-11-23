@@ -24,11 +24,19 @@ export function SyncState<TBase extends Constructor<Phaser.Scene>>(Base: TBase) 
       super(...args);
     }
 
-    // listen to events from the UI
     create() {
+      console.log("CREATE", this.scene.key);
       this.events.on(GameEvents.LOCAL_STATE_UPDATE, this.onLocalStateUpdate, this);
+
+      // if we are already in a game, subscribe to the game updates
+      if (this.localState?.gameId) {
+        this.unsubFromGameStateUpdates = listenToGameStateUpdates(this.localState.gameId, this.onGameStateUpdates);
+      }
+
+      this.events.on("shutdown", this.onShutdown);
     }
 
+    // listen to events from the UI
     onLocalStateUpdate = (localState: LocalState) => {
       const isNowConnectedToGame = localState.gameId && !this.localState?.gameId;
       const hasLeftTheGame = !localState.gameId && this.localState?.gameId;
@@ -46,6 +54,7 @@ export function SyncState<TBase extends Constructor<Phaser.Scene>>(Base: TBase) 
       this.localState = localState;
     };
 
+    // listen to events from the backend
     onGameStateUpdates = (gameState: GameState) => {
       if (!this.localState?.gameId) return;
 
@@ -72,6 +81,10 @@ export function SyncState<TBase extends Constructor<Phaser.Scene>>(Base: TBase) 
       this.gameState = gameState;
     };
 
-    // TODO: unsubscribe from state updates on destroy
+    onShutdown = () => {
+      console.log("SHUTDOWN", this.scene.key);
+      this.events.off(GameEvents.LOCAL_STATE_UPDATE, this.onLocalStateUpdate);
+      this.unsubFromGameStateUpdates();
+    };
   };
 }
