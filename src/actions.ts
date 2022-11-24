@@ -1,7 +1,7 @@
 import { getAuth } from "firebase/auth";
 import { deleteField, doc, getDoc, onSnapshot, setDoc } from "firebase/firestore";
 import { db } from "./firebase";
-import { GameState, GameStatus, PlayerDirection, PlayerState } from "./typings";
+import { DanceFloorState, GameState, GameStatus, PlayerDirection, PlayerState } from "./typings";
 
 export const gameCollectionId = "games";
 
@@ -94,4 +94,8 @@ export async function updatePlayerGridPos(gameId: string, playerId: string, xPos
 
 export async function setGameOver(gameId: string) {
   await setDoc(doc(db, gameCollectionId, gameId), { gameOver: true }, { merge: true });
+}
+
+export async function setDanceFloor(gameId: string, danceFloor: DanceFloorState) {
+  await setDoc(doc(db, gameCollectionId, gameId), { danceFloor }, { merge: true });
 }

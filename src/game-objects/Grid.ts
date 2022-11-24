@@ -11,6 +11,7 @@ export class Grid extends Phaser.GameObjects.GameObject {
   xCenter = 0;
   yCenter = 0;
   cellWidth = 10;
+  debugGrid?: Phaser.GameObjects.Grid;
 
   constructor(scene: Phaser.Scene, x = 0, y = 0, xDim = 1, yDim = 1, cellWidth: number) {
     super(scene, "grid");
@@ -28,7 +29,26 @@ export class Grid extends Phaser.GameObjects.GameObject {
     this.cellWidth = cellWidth;
 
     // visualize the grid
-    scene.add.grid(this.xCenter, this.yCenter, xDim * cellWidth, yDim * cellWidth, cellWidth, cellWidth, 255);
+    // scene.add.grid(this.xCenter, this.yCenter, xDim * cellWidth, yDim * cellWidth, cellWidth, cellWidth, 255);
+  }
+
+  showDebugGrid(show: boolean) {
+    if (show) {
+      // visualize the grid
+      this.debugGrid = this.scene.add.grid(
+        this.xCenter,
+        this.yCenter,
+        this.xDim * this.cellWidth,
+        this.yDim * this.cellWidth,
+        this.cellWidth,
+        this.cellWidth,
+        255
+      );
+    } else {
+      if (this.debugGrid) {
+        this.debugGrid.destroy();
+      }
+    }
   }
 
   canPlaceAt(xPos: number, yPos: number) {

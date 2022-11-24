@@ -1,4 +1,5 @@
 import { getAuth } from "firebase/auth";
+import { Grid } from "../game-objects/Grid";
 import { Actor } from "../game-objects/Actor";
 import Background from "../game-objects/Background";
 import { ContinuousMovement } from "../mixins/ContinuousMovement";
@@ -6,6 +7,8 @@ import { SyncPosition } from "../mixins/SyncPosition";
 import { SyncState } from "../mixins/SyncState";
 import { UploadPosition } from "../mixins/UploadPosition";
 import { GameState, GameStatus, SceneData } from "../typings";
+import { scaleRatio } from "../constants";
+import { DanceFloor } from "../game-objects/DanceFloor";
 
 export class Lobby extends SyncState(Phaser.Scene) {
   background?: Background;
@@ -25,6 +28,8 @@ export class Lobby extends SyncState(Phaser.Scene) {
   create() {
     super.create();
     this.background = new Background(this);
+    const grid = new Grid(this, 140, 140, 4, 4, 17 * scaleRatio);
+    new DanceFloor(this, grid);
   }
 
   spawnPlayer(x: number, y: number, gameId: string, playerId: string) {

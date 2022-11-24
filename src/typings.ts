@@ -11,9 +11,14 @@ export interface LocalState {
   uid: string;
 }
 
+export interface DanceFloorState {
+  [key: number]: { [key: number]: { r: number; g: number; b: number } };
+}
+
 export interface GameState {
   host: string;
   grid: GridState;
+  danceFloor: DanceFloorState;
   gameOver: boolean;
   players: {
     [key: string]: PlayerState;

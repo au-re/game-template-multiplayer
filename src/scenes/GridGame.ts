@@ -2,10 +2,12 @@ import { getAuth } from "firebase/auth";
 import { scaleRatio } from "../constants";
 import { Actor } from "../game-objects/Actor";
 import CountDown from "../game-objects/CountDown";
+import { DanceFloor } from "../game-objects/DanceFloor";
 import { Grid } from "../game-objects/Grid";
 import Jukebox from "../game-objects/Jukebox";
 import { GridMovement } from "../mixins/GridMovement";
 import { MoveOnBeat } from "../mixins/MoveOnBeat";
+import { SyncDanceFloor } from "../mixins/SyncDanceFloor";
 import { SyncGrid } from "../mixins/SyncGrid";
 import { SyncState } from "../mixins/SyncState";
 import { SceneData } from "../typings";
@@ -32,7 +34,10 @@ export class GridGame extends SyncState(Phaser.Scene) {
     const isHost = getAuth().currentUser?.uid === gameId;
 
     const GameGrid = SyncGrid(Grid, gameId);
-    this.grid = new GameGrid(this, 320, 320, 4, 4, 32 * scaleRatio);
+    this.grid = new GameGrid(this, 320, 320, 4, 4, 18 * scaleRatio);
+
+    const GameDanceFloor = SyncDanceFloor(DanceFloor, gameId);
+    new GameDanceFloor(this, this.grid);
 
     this.countDown = new CountDown(this, gameId, isHost);
     this.countDown.sync();

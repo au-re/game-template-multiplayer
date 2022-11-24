@@ -2,6 +2,7 @@ import React, { useContext } from "react";
 import styled from "styled-components";
 import { GameStatus } from "../../typings";
 import { GameStateContext } from "../contexts/GameStateContext";
+import { Tasks } from "./Tasks";
 
 const Timer = styled.div`
   margin-top: 2rem;
@@ -26,6 +27,7 @@ export function InGameOverlay() {
 
   return (
     <>
+      <Tasks />
       <Timer>{gameState.timer}</Timer>
     </>
   );

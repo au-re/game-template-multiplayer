@@ -2,6 +2,8 @@ import { GameEvents } from "../constants";
 
 const bpm = 120;
 const timerInterval = Math.round(1000 / (bpm / 60));
+const intervalBeforeBeat = 80;
+const intervalAfterBeat = 280;
 
 export default class Jukebox extends Phaser.GameObjects.Container {
   intervalTimerDT = 0;
@@ -32,13 +34,13 @@ export default class Jukebox extends Phaser.GameObjects.Container {
   update(t: number, dt: number) {
     this.intervalTimerDT += dt;
 
-    if (!this.inBeat && this.intervalTimerDT >= timerInterval - 280) {
+    if (!this.inBeat && this.intervalTimerDT >= timerInterval - (intervalBeforeBeat + intervalAfterBeat)) {
       this.scene.events.emit(GameEvents.BEAT_START_EVENT);
       this.inBeat = true;
       this.beatPlayed = false;
     }
 
-    if (!this.beatPlayed && this.intervalTimerDT >= timerInterval - 200) {
+    if (!this.beatPlayed && this.intervalTimerDT >= timerInterval - intervalAfterBeat) {
       this.click1Sound.play();
       this.beatPlayed = true;
     }
