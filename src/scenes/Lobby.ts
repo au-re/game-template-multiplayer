@@ -52,6 +52,8 @@ export class Lobby extends SyncState(Phaser.Scene) {
     Object.values(this.players).forEach((player) => {
       player.removeActor();
     });
+    // TODO: create common way to reset the local gamestate
+    this.gameState!.players = {};
     this.players = {};
   };
 

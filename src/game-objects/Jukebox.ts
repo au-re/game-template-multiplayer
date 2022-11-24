@@ -1,6 +1,6 @@
 import { GameEvents } from "../constants";
 
-const bpm = 60;
+const bpm = 120;
 const timerInterval = Math.round(1000 / (bpm / 60));
 
 export default class Jukebox extends Phaser.GameObjects.Container {
@@ -39,7 +39,6 @@ export default class Jukebox extends Phaser.GameObjects.Container {
     }
 
     if (!this.beatPlayed && this.intervalTimerDT >= timerInterval - 200) {
-      console.log(t);
       this.click1Sound.play();
       this.beatPlayed = true;
     }
@@ -52,7 +51,7 @@ export default class Jukebox extends Phaser.GameObjects.Container {
   }
 
   destroy() {
-    this.unsubFromGameStateUpdates?.();
+    // this.unsubFromGameStateUpdates?.();
     super.destroy();
   }
 }

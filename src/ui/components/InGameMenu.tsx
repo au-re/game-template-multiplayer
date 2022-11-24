@@ -38,7 +38,6 @@ export function InGameMenu() {
       <Label>Game ID</Label>
       <div style={{ textAlign: "left" }}>{gameId}</div>
       <Spacer />
-      <div>{gameState.timer}</div>
       <Button
         onClick={() => {
           toggleInGameMenu(false);

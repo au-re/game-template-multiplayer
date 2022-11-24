@@ -1,9 +1,10 @@
 import React from "react";
 import { GameOver } from "./components/GameOver";
-import { LoggedInMenu } from "./components/LoggedInMenu";
 import { InGameMenu } from "./components/InGameMenu";
-import { GameStateWrapper } from "./contexts/GameStateContext";
+import { InGameOverlay } from "./components/InGameOverlay";
 import { LobbyMenu } from "./components/LobbyMenu";
+import { LoggedInMenu } from "./components/LoggedInMenu";
+import { GameStateWrapper } from "./contexts/GameStateContext";
 
 export function GameUI({ game }: { game: Phaser.Game }) {
   return (
@@ -12,6 +13,7 @@ export function GameUI({ game }: { game: Phaser.Game }) {
       <LobbyMenu />
       <GameOver />
       <InGameMenu />
+      <InGameOverlay />
     </GameStateWrapper>
   );
 }
