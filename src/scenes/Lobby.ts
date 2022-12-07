@@ -9,6 +9,8 @@ import { UploadPosition } from "../mixins/UploadPosition";
 import { GameState, GameStatus, SceneData } from "../typings";
 import { scaleRatio } from "../constants";
 import { DanceFloor } from "../game-objects/DanceFloor";
+import { Spawner } from "../game-objects/Spawner"
+import {Pickable} from "../mixins/Pickable"
 
 export class Lobby extends SyncState(Phaser.Scene) {
   background?: Background;
@@ -28,8 +30,21 @@ export class Lobby extends SyncState(Phaser.Scene) {
   create() {
     super.create();
     this.background = new Background(this);
-    const grid = new Grid(this, 140, 140, 4, 4, 17 * scaleRatio);
-    new DanceFloor(this, grid);
+    
+    const spawner = new Spawner(this, {
+      "POTION_RED": {
+        texture: "sprites",
+        frame: 115
+      },
+      "POTION_BLUE": {
+        texture: "sprites",
+        frame: 114
+      }
+    })
+    spawner.xMin = 24*scaleRatio
+    spawner.yMin = 24*scaleRatio
+    spawner.spawnAt("POTION_RED", 120, 140)
+    spawner.spawnRandom(15)
   }
 
   spawnPlayer(x: number, y: number, gameId: string, playerId: string) {
@@ -47,6 +62,15 @@ export class Lobby extends SyncState(Phaser.Scene) {
     }
 
     this.players[playerId] = player;
+    
+    // TODO: remove test
+    if(isLocalPlayer) {
+      const PickableItem = Pickable(Phaser.GameObjects.Sprite, player, () => console.log("PICKED!"))
+      const chest = new PickableItem(this, 500, 500, "sprites", 117)
+      chest.setScale(scaleRatio)
+      this.add.existing(chest);
+    }
+    // ---
   }
 
   onGameJoined = (gameId: string, playerId: string) => {

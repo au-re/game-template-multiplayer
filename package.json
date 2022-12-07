@@ -23,6 +23,7 @@
     "vite": "^3.2.3"
   },
   "dependencies": {
+    "@au-re/procgen": "^0.8.0",
     "dotenv": "^16.0.3",
     "firebase": "^9.13.0",
     "phaser": "^3.55.2",
